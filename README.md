@@ -1,1 +1,1 @@
-# mem-saver
+# PINN-Navier-Stokes
