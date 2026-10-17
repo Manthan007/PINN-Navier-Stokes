@@ -22,5 +22,7 @@ class Model(nn.Module):
 
         x = self.output_layer(x)
 
-        return x
+        phi = x[:, 0:1]
+        p = x[:, 1:2]
+        return (phi, p)
     
