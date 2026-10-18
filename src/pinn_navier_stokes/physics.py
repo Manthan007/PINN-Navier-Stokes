@@ -50,7 +50,6 @@ inputs = torch.cat([x, y, t], dim=1)
 model = Model(input_dim=3, output_dim=2)
 psi, p = model(inputs)
 
-
 def derivative(output, input):
     return torch.autograd.grad(
             outputs=output, 
@@ -59,19 +58,41 @@ def derivative(output, input):
             create_graph=True
         )[0]
 
-def get_gradient():
 
+def NaiverStokesLoss():
+
+    # velocities
     u = derivative(psi, y)
-    
     v = -derivative(psi, x)
 
-    return u, v
+    # first order derivatives
+    u_t = derivative(u, t)
+    u_x = derivative(u, x)
+    u_y = derivative(u, y)
+    v_t = derivative(v, t)
+    v_x = derivative(v, x)
+    v_y = derivative(v, y)
+    p_x = derivative(p, x)
+    p_y = derivative(p, y)
+
+    # second order derivaties
+    u_x_x = derivative(u_x, x)
+    u_y_y = derivative(u_y, y)
+    v_x_x = derivative(v_x, x)
+    v_y_y = derivative(v_y, y)
+
+    vis = 0.01
+    f = u_t + u*u_x + v*u_y + p_x - vis*(u_x_x + u_y_y)
+    g = v_t + u*v_x + v*v_y + p_y - vis*(v_x_x + v_y_y)
+
+    return f, g
+
 
 # Calculate velocities
-u, v = get_gradient()
+f, g = NaiverStokesLoss()
 
 print("psi shape:", psi.shape)
 print("p shape:", p.shape)
-print("u shape:", u.shape)
-print("v shape:", v.shape)
+print("f shape:", f.shape)
+print("g shape:", g.shape)
 
