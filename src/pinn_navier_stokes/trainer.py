@@ -5,8 +5,6 @@ from pinn_navier_stokes.netwok import Model
 
 def NaiverStokesLoss(model, x, y, t):
     inputs = torch.cat([x, y, t], dim=1)
-
-    model = Model(input_dim=3, output_dim=2)
     psi, p = model(inputs)
 
     # velocities
@@ -32,12 +30,12 @@ def NaiverStokesLoss(model, x, y, t):
     vis = 0.01
     f = u_t + u*u_x + v*u_y + p_x - vis*(u_x_x + u_y_y)
     g = v_t + u*v_x + v*v_y + p_y - vis*(v_x_x + v_y_y)
-
+    
     return torch.mean(f**2) + torch.mean(g**2)
 
-def closure(model):
-    optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=50000)
-
+# setting up the model and optimizer
+model = Model(input_dim=3, output_dim=2)
+optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=50000)
 
 # fetching the data
 full_tensor =  GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
@@ -51,3 +49,19 @@ tensor = full_tensor[idx]
 x = tensor[:, 0:1].requires_grad_(True)
 y = tensor[:, 1:2].requires_grad_(True)
 t = tensor[:, 2:3].requires_grad_(True)
+
+def closure(model):
+    optimizer.zero_grad()
+
+    # 1. MSE_data
+    MSE_data = torch.lo
+    # 2. MSE_physics
+    MSE_physics = NaiverStokesLoss(model, x, y, t)
+    # 3. total_loss
+    total_loss = 
+
+    total_loss.backward()
+    return total_loss
+
+optimizer.step(closure)
+

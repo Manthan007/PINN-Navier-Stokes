@@ -21,7 +21,7 @@ def GetData(data_path: str):
     # Print shapes to inspect dimensions
     print("X_star Shape:", x_tensor.shape)
     print("t Shape:", t_tensor.shape)
-    print("u_star Shape: ", u_star.shape)
+    print("u_star Shape: ", u_tensor.shape)
 
     N_spatial = x_tensor.shape[0]
     N_time = t_tensor.shape[0]
