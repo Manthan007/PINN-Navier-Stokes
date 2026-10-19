@@ -39,7 +39,11 @@ def GetData(data_path: str):
     return X_Y_T_tensor
 
 
-tensor = GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
+full_tensor = GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
+
+N_train = 10000
+idx = torch.randperm(full_tensor.shape[0])[:N_train]
+tensor = full_tensor[idx]
 
 x = tensor[:, 0:1].requires_grad_(True)
 y = tensor[:, 1:2].requires_grad_(True)
