@@ -41,7 +41,7 @@ def GetData(data_path: str):
 
 full_tensor = GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
 
-N_train = 10000
+N_train = 100000
 idx = torch.randperm(full_tensor.shape[0])[:N_train]
 tensor = full_tensor[idx]
 
