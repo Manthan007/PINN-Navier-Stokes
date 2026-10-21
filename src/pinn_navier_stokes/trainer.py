@@ -1,4 +1,6 @@
 import torch
+import scipy
+import os
 from pinn_navier_stokes.physics import GetData, derivative
 from pinn_navier_stokes.netwok import Model
 
@@ -35,13 +37,13 @@ def NaiverStokesLoss(model, x, y, t):
 
 # setting up the model and optimizer
 model = Model(input_dim=3, output_dim=2)
-optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=50000)
+optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=10000)
 
 # fetching the data
 full_tensor =  GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
 
 # random sampling
-N_train = 100000
+N_train = 5000
 idx = torch.randperm(full_tensor.shape[0])[:N_train]
 tensor = full_tensor[idx]
 
@@ -50,18 +52,51 @@ x = tensor[:, 0:1].requires_grad_(True)
 y = tensor[:, 1:2].requires_grad_(True)
 t = tensor[:, 2:3].requires_grad_(True)
 
-def closure(model):
+# Fetching the collocation points
+mat_data = scipy.io.loadmat("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
+u_star = mat_data["U_star"]
+u_flat = torch.from_numpy(u_star[:, 0, :]).float().flatten().unsqueeze(1)
+v_flat = torch.from_numpy(u_star[:, 1, :]).float().flatten().unsqueeze(1)
+# True velocities
+u_true = u_flat[idx]
+v_true = v_flat[idx]
+
+
+
+
+def closure():
     optimizer.zero_grad()
 
+    inputs = torch.cat([x, y, t], dim=1)
+    psi, p = model(inputs)
+    # pred velocities
+    u_pred = derivative(psi, y)
+    v_pred = -derivative(psi, x)
+
     # 1. MSE_data
-    MSE_data = torch.lo
+    MSE_data = torch.mean((u_pred-u_true)**2) + torch.mean((v_pred-v_true)**2)
     # 2. MSE_physics
     MSE_physics = NaiverStokesLoss(model, x, y, t)
     # 3. total_loss
-    total_loss = 
+    total_loss = MSE_data + MSE_physics
 
     total_loss.backward()
+    print(f"Loss: {total_loss.item():.5f} (Physics: {MSE_physics.item():.5f}, Data: {MSE_data.item():.5f})")
+    
     return total_loss
 
+
+# Run the optimizer
+print("Starting L-BFGS training...")
 optimizer.step(closure)
 
+# 1. Ensure the 'model' directory exists
+os.makedirs("model", exist_ok=True)
+
+# 2. Define the file path
+path = "model/pinn_cylinder_weights.pth"
+
+# 3. Save the model's state dictionary (weights)
+torch.save(model.state_dict(), path)
+
+print(f"Model weights successfully saved to {path}")
