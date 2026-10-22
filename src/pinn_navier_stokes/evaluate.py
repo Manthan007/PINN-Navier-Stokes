@@ -43,5 +43,6 @@ plt.colorbar(label='Pressure')
 plt.title("PINN Prediction: Pressure Field at t=10s")
 plt.xlabel("X")
 plt.ylabel("Y")
+plt.savefig("results.png")
 plt.show()
 
