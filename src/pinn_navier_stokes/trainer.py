@@ -37,7 +37,8 @@ def NaiverStokesLoss(model, x, y, t):
 
 # setting up the model and optimizer
 model = Model(input_dim=3, output_dim=2)
-optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=10000)
+adam_optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+lbfgs_optimizer = torch.optim.LBFGS(model.parameters(), lr=1.0, max_iter=10000)
 
 # fetching the data
 full_tensor =  GetData("D:\\PINN-Navier-Stokes\\data\\cylinder_nektar_wake.mat")
@@ -62,10 +63,33 @@ u_true = u_flat[idx]
 v_true = v_flat[idx]
 
 
+print("Starting Adam pre-training...")
+epochs = 1500
+for epoch in range(epochs):
+    adam_optimizer.zero_grad()
+    
+    # 1. Forward passes & derivatives
+    inputs = torch.cat([x, y, t], dim=1)
+    psi, p = model(inputs)
+    u_pred = derivative(psi, y)
+    v_pred = -derivative(psi, x)
+    
+    # 2. Calculate Losses
+    MSE_data = torch.mean((u_pred-u_true)**2) + torch.mean((v_pred-v_true)**2)
+    MSE_physics = NaiverStokesLoss(model, x, y, t)
+    total_loss = MSE_data + MSE_physics
+    
+    # 3. Backprop
+    total_loss.backward()
+    adam_optimizer.step()
+    
+    if epoch % 500 == 0:
+        print(f"Adam Epoch {epoch}: Loss {total_loss.item():.5f}")
+
 
 
 def closure():
-    optimizer.zero_grad()
+    lbfgs_optimizer.zero_grad()
 
     inputs = torch.cat([x, y, t], dim=1)
     psi, p = model(inputs)
@@ -88,7 +112,7 @@ def closure():
 
 # Run the optimizer
 print("Starting L-BFGS training...")
-optimizer.step(closure)
+lbfgs_optimizer.step(closure)
 
 # 1. Ensure the 'model' directory exists
 os.makedirs("model", exist_ok=True)
